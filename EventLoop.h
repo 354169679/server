@@ -37,7 +37,7 @@ public:
         Channel::ChannelPtr channel_ptr = std::make_unique<Channel>(this, fd, ev);
         errif(channel_ptr == nullptr, "channel ptr is nullptr");
         channel_ptr->set_cb(cb);
-        epoll_ptr->add_channel(channel_ptr.get());
+        epoll_ptr->add_channel(channel_ptr);
         add_channel_to_list(std::move(channel_ptr));
     }
 
