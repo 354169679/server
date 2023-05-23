@@ -18,8 +18,6 @@ add_executable(client client.cpp)
 
 find_package(PkgConfig REQUIRED)
 
-pkg_check_modules(libnetlink REQUIRED IMPORTED_TARGET libnl-3.0 libnl-genl-3.0 libnl-route-3.0)
-
 target_link_libraries(server -lfmt)
 
 #target_link_libraries(a.out PkgConfig::libnetlink)
