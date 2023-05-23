@@ -27,7 +27,7 @@ public:
         errif(epoll_fd_ == -1, "epoll create error");
     }
 
-    void del_channel(Channel::ChannelPtr &ch)
+    void del_channel(Channel::ChannelPtr &ch)//只能使用引用或者指针，因为调用del_channel隐式使用了拷贝构造函数，ChannelPtr为unique_ptr无法被拷贝
     {
         int channel_fd_ = ch->get_channel_fd();
         int err = epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, channel_fd_, nullptr);
