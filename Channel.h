@@ -7,16 +7,17 @@
 #include <iostream>
 #include <functional>
 #include <memory>
-
+#include <unordered_set>
 
 #include "util.h"
+#include "spdlog/spdlog.h"
 
 class EventLoop;
 
 class Channel
 {
 public:
-    using EventCbFun = std::function<void()>;
+    using EventCbFun = std::function<void(EventLoop *loop, Channel *ch)>;
     using ChannelPtr = std::unique_ptr<Channel>;
     using ChannelList = std::unordered_set<ChannelPtr>;
 
@@ -74,8 +75,12 @@ public:
 
     inline void handle_event()
     {
+        spdlog::info("handle_event");
         if (happend_event_ & EPOLLIN)
-            read_cb_();
+        {
+            
+            read_cb_(loop_,this);
+        }
     }
 
     ~Channel() = default;
