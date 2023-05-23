@@ -10,6 +10,9 @@ int main()
 
     client_socket.connect();
 
+    write(client_socket.get_fd(), "xzhyyds", sizeof("xzhyyds"));
+
+    
 
     return 0;
 }
