@@ -75,11 +75,13 @@ public:
 
     inline void handle_event()
     {
-        spdlog::info("handle_event");
         if (happend_event_ & EPOLLIN)
         {
-            
             read_cb_(loop_,this);
+        }
+        else if(happend_event_ & EPOLLOUT)
+        {
+            spdlog::info("EPOLLOUT");
         }
     }
 
