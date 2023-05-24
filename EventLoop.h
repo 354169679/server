@@ -14,7 +14,7 @@
 class EventLoop : NoCopy
 {
 private:
-    std::unique_ptr<Epoll> epoll_ptr;
+    Epoll::EpollPtr epoll_ptr;
     Channel::ChannelList list_;
     std::vector<Channel*> active_list_;
     bool quit_;
