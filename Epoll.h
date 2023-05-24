@@ -16,6 +16,9 @@ class Channel;
 
 class Epoll
 {
+public:
+    using EpollPtr = std::unique_ptr<Epoll>;
+
 private:
     int epoll_fd_;
     epoll_event coming_ev[MAX_COUNT];
