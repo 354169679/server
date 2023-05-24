@@ -21,12 +21,17 @@ private:
 
     inline void add_channel_to_list(Channel::ChannelPtr &&channel_ptr)
     {
-        list_.insert(std::move(channel_ptr));
+        list_.push_back(std::move(channel_ptr));
     }
 
 public:
     EventLoop(Epoll *ep = nullptr) : epoll_ptr(std::make_unique<Epoll>()), quit_(false) {}
-    ~EventLoop() = default;
+    ~EventLoop()
+    {
+        epoll_ptr.reset();
+        list_.clear();
+        active_list_.clear();
+    }
 
     /// @brief 添加fd回调任务
     /// @param fd 关注的文件描述符
@@ -34,9 +39,13 @@ public:
     /// @param ev 文件描述符所关注的事件类型
     void add_fd_to_eventloop(int fd, const Channel::EventCbFun &cb, uint32_t ev)
     {
+        
         Channel::ChannelPtr channel_ptr = std::make_unique<Channel>(this, fd, ev);
         errif(channel_ptr == nullptr, "channel ptr is nullptr");
-        channel_ptr->set_cb(cb);
+
+        Channel::EventCbFun &cb_ = const_cast<Channel::EventCbFun &> (cb);
+        channel_ptr->set_cb(std::move(cb_));
+
         epoll_ptr->add_channel(channel_ptr);
         add_channel_to_list(std::move(channel_ptr));
     }
