@@ -18,7 +18,7 @@ class Channel
 {
 public:
     using ChannelPtr = std::unique_ptr<Channel>;
-    using ChannelList = std::unordered_set<ChannelPtr>;
+    using ChannelList = std::vector<ChannelPtr>;
     using EventCbFun = std::function<void(EventLoop *loop, Channel *ch)>;
     
 private:
@@ -33,7 +33,8 @@ public:
         : loop_(loop),
           fd_(fd),
           interest_event_(interest_event),
-          happend_event_(0)
+          happend_event_(0),
+          read_cb_(EventCbFun())
     {
         assert(fd != -1 && loop != nullptr);
     }
