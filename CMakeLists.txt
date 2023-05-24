@@ -18,6 +18,6 @@ add_executable(client client.cpp)
 
 find_package(PkgConfig REQUIRED)
 
-target_link_libraries(server -lfmt)
+target_link_libraries(server)
 
 #target_link_libraries(a.out PkgConfig::libnetlink)
