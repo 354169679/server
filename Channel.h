@@ -83,6 +83,10 @@ public:
         {
             spdlog::info("EPOLLOUT");
         }
+        else
+        {
+            spdlog::info("other");
+        }
     }
 
     ~Channel() = default;
