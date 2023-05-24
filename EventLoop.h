@@ -32,7 +32,7 @@ public:
     /// @param fd 关注的文件描述符
     /// @param cb 文件描述符所绑定的回调函数
     /// @param ev 文件描述符所关注的事件类型
-    void add_event(int fd, const Channel::EventCbFun &cb, uint32_t ev)
+    void add_fd_to_eventloop(int fd, const Channel::EventCbFun &cb, uint32_t ev)
     {
         Channel::ChannelPtr channel_ptr = std::make_unique<Channel>(this, fd, ev);
         errif(channel_ptr == nullptr, "channel ptr is nullptr");
