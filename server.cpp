@@ -1,3 +1,4 @@
+
 #include "SerSock.h"
 #include "Channel.h"
 #include "EventLoop.h"
@@ -31,7 +32,7 @@ int main()
     server_socket.bind();
     server_socket.listen();
 
-    loop.add_fd_to_eventloop(listen_fd, listen_cb, EPOLLIN);
+    loop.add_fd_to_eventloop(listen_fd, std::move(listen_cb), EPOLLIN);
 
     spdlog::info("start loop");
     loop.start();
