@@ -1,4 +1,3 @@
-
 #include "SerSock.h"
 #include "Channel.h"
 #include "EventLoop.h"
@@ -7,16 +6,18 @@
 
 void client_cb(EventLoop *loop, Channel *ch)
 {
-    char buf[20] = {0};
-    // read(ch->get_channel_fd(), buf, sizeof(buf));
-    std::cout << "hello client!" << std::endl;
+    char buf[20]={0};
+    int fd = ch->get_channel_fd();
+    read(fd, buf, sizeof(buf));
+    write(fd, buf, strlen(buf));
+    std::cout << "write" << std::endl;
 }
 
 void listen_cb(EventLoop *loop, Channel *ch)
 {
     spdlog::info("accept a connection require");
     int client_fd = accept4(ch->get_channel_fd(), nullptr, nullptr, O_NONBLOCK);
-    loop->add_event(client_fd, client_cb, EPOLLIN);
+    loop->add_fd_to_eventloop(client_fd, client_cb, EPOLLIN);
 }
 
 int main()
@@ -30,7 +31,7 @@ int main()
     server_socket.bind();
     server_socket.listen();
 
-    loop.add_event(listen_fd, listen_cb, EPOLLIN);
+    loop.add_fd_to_eventloop(listen_fd, listen_cb, EPOLLIN);
 
     spdlog::info("start loop");
     loop.start();
