@@ -17,10 +17,10 @@ class EventLoop;
 class Channel
 {
 public:
-    using EventCbFun = std::function<void(EventLoop *loop, Channel *ch)>;
     using ChannelPtr = std::unique_ptr<Channel>;
     using ChannelList = std::unordered_set<ChannelPtr>;
-
+    using EventCbFun = std::function<void(EventLoop *loop, Channel *ch)>;
+    
 private:
     EventLoop *loop_;
     int fd_;
