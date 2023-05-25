@@ -2,12 +2,12 @@
 
 #include "Socket.h"
 
-class SerSock : public Socket
+class ServerSock : public Socket
 {
 public:
-    SerSock(const std::string &ip_str = "127.0.0.1", const int &port = 8899) : Socket(ip_str, port){}
+    ServerSock(const std::string &ip_str = "127.0.0.1", const int &port = 8899) : Socket(ip_str, port){}
 
-    ~SerSock()
+    ~ServerSock()
     {
         close(get_fd());
     }
