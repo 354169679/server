@@ -23,22 +23,22 @@ public:
 private:
     int epoll_fd_;
     epoll_event ev;
-    // epoll_event coming_ev[MAX_COUNT];
-    std::array<epoll_event, MAX_COUNT> coming_ev;
+    epoll_event coming_ev[MAX_COUNT];
+    // std::array<epoll_event, MAX_COUNT> coming_ev;
 
 private:
-    void operate_epoll(const Channel::ChannelPtr &ch, int op)
+    void operate_epoll(const Channel::ChannelPtr &ch, int op,const std::string &op_str)
     {
         bzero(&ev, sizeof(ev));
         int channel_fd_ = ch->get_channel_fd();
         ev.data.ptr = ch.get();
         ev.events = ch->get_interest_event();
         int err = epoll_ctl(epoll_fd_, op, channel_fd_, &ev);
-        errif(err == -1, "epoll delete fd error");
+        errif(err == -1, op_str.c_str());
     }
 
 public:
-    Epoll() : epoll_fd_(epoll_create1(EPOLL_CLOEXEC))
+    Epoll() : epoll_fd_(epoll_create1(0))
     {
         bzero(&ev, sizeof(ev));
         errif(epoll_fd_ == -1, "epoll create error");
@@ -46,24 +46,24 @@ public:
 
     void del_channel(const Channel::ChannelPtr &ch) // 只能使用引用或者指针，因为调用del_channel隐式使用了拷贝构造函数，ChannelPtr为unique_ptr无法被拷贝
     {
-        operate_epoll(ch, EPOLL_CTL_DEL);
+        operate_epoll(ch, EPOLL_CTL_DEL,"EPOLL_CTL_DEL");
     }
 
     void add_channel(const Channel::ChannelPtr &ch)
     {
-        operate_epoll(ch, EPOLL_CTL_ADD);
+        operate_epoll(ch, EPOLL_CTL_ADD,"EPOLL_CTL_ADD");
     }
 
     void mod_channel(const Channel::ChannelPtr &ch)
     {
-        operate_epoll(ch, EPOLL_CTL_MOD);
+        operate_epoll(ch, EPOLL_CTL_MOD,"EPOLL_CTL_MOD");
     }
 
     void poll(std::vector<Channel *> &list)
     {
     again:
-        coming_ev.fill(epoll_event());
-        int err = epoll_wait(epoll_fd_, coming_ev.data(), MAX_COUNT, -1);
+        // coming_ev.fill(epoll_event());
+        int err = epoll_wait(epoll_fd_, coming_ev, MAX_COUNT, -1);
 
         if (errno == EAGAIN || errno == EINTR)
         {
@@ -73,7 +73,7 @@ public:
         {
             errif(err == -1, "epoll wait error");
         }
-        
+
         for (int i = 0; i < err; ++i)
         {
             if (coming_ev[i].data.ptr == nullptr)
