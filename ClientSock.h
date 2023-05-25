@@ -2,7 +2,7 @@
 
 #include "Socket.h"
 
-class CliSock : public Socket
+class ClientSock : public Socket
 {
 private:
     // inline void reconnect()
@@ -11,9 +11,9 @@ private:
     // }
 
 public:
-    CliSock() = default;
+    ClientSock() = default;
 
-    CliSock(const std::string &ip_str, const int &port) : Socket(ip_str, port) {}
+    ClientSock(const std::string &ip_str, const int &port) : Socket(ip_str, port) {}
 
     // inline void set_ip_and_port(const std::string &ip_str, const int &port)
     // {
@@ -29,7 +29,7 @@ public:
         close(fd);
     }
 
-    ~CliSock()
+    ~ClientSock()
     {
         int fd = get_fd();
         close(fd);
