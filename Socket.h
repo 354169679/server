@@ -63,19 +63,13 @@ public:
         init_addr(ip, port);
     }
 
-    ~Socket()
-    {
-        if (sk_fd_ != -1)
-        {
-            close(sk_fd_);
-            sk_fd_ = -1;
-            // std::cout << "close socket fd" << std::endl;
-        }
-    }
-
     /// @brief 获取socket描述符
     inline int get_fd()const
     {
         return sk_fd_;
     }
+
+    virtual ~Socket() = 0;//使用纯虚析构函数成为抽象类
 };
+
+Socket::~Socket(){};
