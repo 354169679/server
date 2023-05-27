@@ -1,5 +1,5 @@
 
-#include "SerSock.h"
+#include "ServerSock.h"
 #include "Channel.h"
 #include "EventLoop.h"
 
@@ -23,7 +23,7 @@ void listen_cb(EventLoop *loop, Channel *ch)
 
 int main()
 {
-    SerSock server_socket("127.0.0.1", 8899);
+    ServerSock server_socket("127.0.0.1", 8899);
 
     int listen_fd = server_socket.get_fd();
 
