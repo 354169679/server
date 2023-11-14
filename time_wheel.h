@@ -1,22 +1,25 @@
+#include <sys/types.h> /* See NOTES */
 #pragma once
 
 #include <time.h>
-
+#include <unistd.h>
 #include <vector>
 #include <functional>
 #include <tuple>
 
+#include <iostream>
+
 /* 单级时间轮定时器 */
 // todo 实现多级定时器
-class time_wheel
+class Alarm
 {
 public:
-    using task_type = std::function<void()>;
+    using task = std::tuple<size_t, const std::function<void()>>;
 
 private:
-    int time_fd;                                   /* 备用timer_creat_fd */
-    int cur_sec;                                   /* 当前时间轮的下标 */
-    std::vector<std::vector<task_type>> fun_timer; /* 时间轮 seconds,task */
+    size_t cur_sec;                           /* 当前时间轮的下标 */
+    std::vector<std::vector<task>> fun_timer; /* 时间轮 seconds,task */
+    bool quit;
 
     // int cur_min; /* 多级时间轮分针下标 备用 */
     // std::tuple<int, int, int> clock_;
@@ -26,72 +29,67 @@ private:
     // std::vector<std::vector<std::vector<task_type>>> fun_timer;
 
 public:
-    time_wheel() : time_fd(-1), cur_sec(0), fun_timer(60) {}
+    Alarm() : cur_sec(0), fun_timer(60), quit(false) {}
 
     /// @brief 向时间轮中注册不超过60s的定时任务
     /// @param fun 任务
     /// @param time 定时时间
-    void regist_task(const task_type &fun, int time)
+    void add_task(size_t time, const std::function<void()> &fun)
     {
         // std::cout << time % 60 << std::endl;
-        fun_timer[time % 60].push_back(fun);
+        auto element = std::make_tuple(time, std::move(fun));
+        fun_timer[time % 60].push_back(element);
     }
-    
+
+    void add_task_agagin(const task &element)
+    {
+        size_t future_time = cur_sec + std::get<0>(element);
+        if (future_time + cur_sec <= 60)
+        {
+            auto time = std::get<0>(element);
+            auto fun = std::get<1>(element);
+            auto temp = std::make_tuple(time, fun);
+            fun_timer[time % 60].push_back(temp);
+        }
+        else 
+        {
+
+        }
+    }
 
     /// @brief 每过一秒tick一次 移动一次时间轮下标
-    void tick()
+    void start()
     {
-        ++cur_sec;
-        for (auto &f : fun_timer[cur_sec])
+        while (!quit)
         {
-            f();
+            sleep(1);
+            ++cur_sec;
+            for (auto &task_element : fun_timer[cur_sec])
+            {
+                std::get<1>(task_element)();
+                add_task_agagin(task_element);
+            }
+            fun_timer[cur_sec].clear();
+            cur_sec = cur_sec % 60;
         }
-        cur_sec = cur_sec % 60;
     }
 
-    ~time_wheel() = default;
+    inline void stop()
+    {
+        quit = true;
+    }
+
+    ~Alarm() = default;
 };
 
+int main()
+{
+    Alarm a;
+    auto task = []()
+    { std::cout << "hello world" << std::endl; };
 
+    a.add_task(2, task);
+    a.start();
 
-
-
-// Test
-
-
-// time_wheel ti;
-// ti.regist_task(fff, 1);
-// ti.regist_task(fff2, 10);
-// sleep(1);
-// ti.tick(); // 1s
-// cout << "1s" << endl;
-// sleep(1);
-// ti.tick();
-// cout << "2s" << endl;
-// sleep(1);
-// ti.tick();
-// cout << "3s" << endl;
-// sleep(1);
-// ti.tick();
-// cout << "4s" << endl;
-// sleep(1);
-// ti.tick();
-// cout << "5s" << endl;
-// sleep(1);
-// ti.tick();
-// cout << "6s" << endl;
-// sleep(1);
-// ti.tick();
-// cout << "7s" << endl;
-// sleep(1);
-// ti.tick();
-// cout << "8s" << endl;
-// sleep(1);
-// ti.tick();
-// cout << "9s" << endl;
-// sleep(1);
-// ti.tick();
-// cout << "10s" << endl;
-// sleep(1);
-// ti.tick();
-// cout << "11s" << endl;
+    return 0;
+}
