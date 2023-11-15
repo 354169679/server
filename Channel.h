@@ -1,94 +1,74 @@
 #pragma once
 
-#include <sys/epoll.h>
-
-#include <cassert>
 #include <cstring>
+#include <cassert>
 #include <iostream>
 #include <functional>
 #include <memory>
-#include <unordered_set>
+#include <unordered_map>
+#include <sys/epoll.h>
 
-#include "util.h"
-#include "spdlog/spdlog.h"
+#include "glog/logging.h"
+#include "Copy.h"
 
 class EventLoop;
+class Channel;
 
-class Channel
+using ChannelPtr = std::unique_ptr<Channel>;
+using CallBack = std::function<void(EventLoop *loop, Channel *chan, void *user_date)>;
+
+class Channel : NoCopy
 {
-public:
-    using ChannelPtr = std::unique_ptr<Channel>;
-    using ChannelList = std::vector<ChannelPtr>;
-    using EventCbFun = std::function<void(EventLoop *loop, Channel *ch)>;
-    
+    friend class Epoll;
+    friend class EventLoop;
+
 private:
     EventLoop *loop_;
     int fd_;
-    uint32_t interest_event_;
-    uint32_t happend_event_;
-    EventCbFun read_cb_;
+    uint32_t events_;
+    CallBack cb_;
+    void *ptr_;
+    uint32_t revents_;
 
 public:
-    Channel(EventLoop *loop = nullptr, int fd = -1, uint32_t interest_event = 0)
-        : loop_(loop),
-          fd_(fd),
-          interest_event_(interest_event),
-          happend_event_(0),
-          read_cb_(EventCbFun())
+    Channel(EventLoop *loop = nullptr, int fd = -1, uint32_t event_type = EPOLLIN, CallBack cb = CallBack(), void *pointer = nullptr)
+        : loop_(loop), fd_(fd), events_(event_type), cb_(cb), revents_(0), ptr_(pointer)
     {
-        assert(fd != -1 && loop != nullptr);
+        assert(fd > 0);
     }
 
-    inline void set_cb(const EventCbFun &cb)
-    {
-        read_cb_ = cb;
-    }
-
-    inline void set_cb(EventCbFun &&cb)
-    {
-        read_cb_ = std::move(cb);
-    }
-
-    inline int get_channel_fd() const
+    inline int GetFd() const
     {
         return fd_;
     }
 
-    inline void set_interest_event(uint32_t ev)
+    inline void HandleEvent(uint32_t rev)
     {
-        interest_event_ = ev;
-    }
-
-    inline uint32_t get_interest_event() const
-    {
-        return interest_event_;
-    }
-
-    inline void set_happend_event(uint32_t ev)
-    {
-        happend_event_ = ev;
-    }
-
-    inline uint32_t get_happend_event() const
-    {
-        return happend_event_;
-    }
-
-    inline void handle_event()
-    {
-        if (happend_event_ & EPOLLIN)
+        if (rev & EPOLLIN)
         {
-            read_cb_(loop_,this);
-        }
-        else if(happend_event_ & EPOLLOUT)
-        {
-            spdlog::info("EPOLLOUT");
+            cb_(loop_, this, ptr_);
         }
         else
         {
-            spdlog::info("other");
+            LOG(INFO) << "other event";
         }
     }
 
-    ~Channel() = default;
+    inline void ReadChannel(std::string &str)
+    {
+        char *buffer = (char *)calloc(1024, sizeof(char));
+        ::read(fd_, buffer, 1024);
+        str.assign(buffer);
+        free(buffer);
+    }
+
+    void WriteChannel(const std::string &str)
+    {
+        ::write(fd_, str.c_str(), str.size());
+    }
+
+    ~Channel()
+    {
+        ::close(fd_);
+    }
 };
