@@ -1,77 +1,97 @@
 #pragma once
 
 #include <memory>
+#include <sys/timerfd.h>
 #include <functional>
 #include <vector>
 
-#include "NoCopy.h"
+#include "Copy.h"
 #include "Epoll.h"
+#include "Channel.h"
 
-#include "spdlog/spdlog.h"
-
-
+#include <glog/logging.h>
 
 class EventLoop : NoCopy
 {
 private:
-    Epoll::EpollPtr epoll_ptr;
-    Channel::ChannelList list_;
-    std::vector<Channel*> active_list_;
+    std::unique_ptr<Epoll> epoll_ptr_;
+    std::unordered_map<int, ChannelPtr> channel_list_;
+    std::vector<Channel *> active_list_;
     bool quit_;
 
-    inline void add_channel_to_list(Channel::ChannelPtr &&channel_ptr)
-    {
-        list_.push_back(std::move(channel_ptr));
-    }
-
 public:
-    EventLoop(Epoll *ep = nullptr) : epoll_ptr(std::make_unique<Epoll>()), quit_(false) {}
-    ~EventLoop()
-    {
-        epoll_ptr.reset();
-        list_.clear();
-        active_list_.clear();
-    }
+    EventLoop() : epoll_ptr_(new Epoll), quit_(false) {}
 
     /// @brief 添加fd回调任务
     /// @param fd 关注的文件描述符
+    /// @param event_type 文件描述符所关注的事件类型
     /// @param cb 文件描述符所绑定的回调函数
-    /// @param ev 文件描述符所关注的事件类型
-    void add_fd_to_eventloop(int fd, const Channel::EventCbFun &cb, uint32_t ev)
+    ChannelPtr &CreateChannel(int fd, uint32_t event_type, const CallBack &cb, void *pointer)
     {
-        
-        Channel::ChannelPtr channel_ptr = std::make_unique<Channel>(this, fd, ev);
-        errif(channel_ptr == nullptr, "channel ptr is nullptr");
-
-        Channel::EventCbFun &cb_ = const_cast<Channel::EventCbFun &> (cb);
-        channel_ptr->set_cb(std::move(cb_));
-
-        epoll_ptr->add_channel(channel_ptr);
-        add_channel_to_list(std::move(channel_ptr));
+        ChannelPtr channel = std::make_unique<Channel>(this, fd, event_type, cb, pointer);
+        assert(channel != nullptr);
+        epoll_ptr_->ChangeEpoll(channel, EPOLL_CTL_ADD);
+        bool emplace_result = channel_list_.emplace(channel->fd_, std::move(channel)).second;
+        if (emplace_result == false)
+        {
+            LOG(ERROR) << "channel list insert a element error";
+        }
+        return channel_list_[fd];
     }
 
-    void add_timer_event(const std::function<void> &cb)
-    {
+    // void EmpalceTimerChannel(int timeout, const CallBack &cb, void *pointer)
+    // {
+    //     if (timeout <= 0)
+    //         return;
+    //     int timer_fd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
+    //     assert(timer_fd > 0);
+    //     ChannelPtr channel = std::make_unique<Channel>(this, timer_fd, EPOLLIN, cb, pointer);
+    //     assert(channel != nullptr);
+    //     epoll_ptr_->ChangeEpoll(channel, EPOLL_CTL_ADD);
+    //     bool emplace_result = channel_list_.emplace(channel->fd_, std::move(channel)).second;
+    //     if (emplace_result == false)
+    //     {
+    //         LOG(ERROR) << "channel list insert a element error";
+    //     }
+    //     itimerspec time;
+    //     time.it_value.tv_nsec = 0;
+    //     time.it_value.tv_sec = timeout;
+    //     time.it_interval.tv_nsec = 0;
+    //     time.it_interval.tv_sec = timeout;
+    //     timerfd_settime(timer_fd, 0, &time, nullptr);
+    // }
 
-    }
-
-    void quit()
+    /// @brief exit eventloop mode
+    inline void Stop()
     {
         quit_ = true;
     }
 
-    void start()
+    /// @brief start eventloop mode
+    void Start()
     {
         while (!quit_)
         {
             active_list_.clear();
-            epoll_ptr->poll(active_list_);
-            spdlog::info("get epoll,sum active list:{}",active_list_.size());
-            sleep(1);
-            for (auto &i:active_list_)
+            epoll_ptr_->Poll(active_list_, channel_list_.size());
+            for (auto &channel : active_list_)
             {
-                i->handle_event();
+                channel->HandleEvent(channel->revents_);
             }
         }
+    }
+
+    /// @brief delete a channel
+    /// @param fd fd associated with the channel
+    inline void EraseChannel(int fd)
+    {
+        epoll_ptr_->ChangeEpoll(channel_list_.at(fd), EPOLL_CTL_DEL);
+        channel_list_.erase(fd);
+    }
+
+    ~EventLoop()
+    {
+        channel_list_.clear();
+        active_list_.clear();
     }
 };
