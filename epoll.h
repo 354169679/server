@@ -2,90 +2,80 @@
 
 #include <sys/epoll.h>
 #include <unistd.h>
-
+#include <assert.h>
 #include <iostream>
-#include <array>
 
 #include "Channel.h"
-#include "util.h"
 
-#include "spdlog/spdlog.h"
-
-constexpr int MAX_COUNT = 100;
-
-class Channel;
-
-class Epoll
+class Epoll : NoCopy
 {
-public:
-    using EpollPtr = std::unique_ptr<Epoll>;
-
 private:
     int epoll_fd_;
-    epoll_event ev;
-    epoll_event coming_ev[MAX_COUNT];
-    // std::array<epoll_event, MAX_COUNT> coming_ev;
+    epoll_event *events_;
 
 private:
-    void operate_epoll(const Channel::ChannelPtr &ch, int op,const std::string &op_str)
+    void FillActionList(std::vector<Channel *> &active_list, int res)
     {
-        bzero(&ev, sizeof(ev));
-        int channel_fd_ = ch->get_channel_fd();
-        ev.data.ptr = ch.get();
-        ev.events = ch->get_interest_event();
-        int err = epoll_ctl(epoll_fd_, op, channel_fd_, &ev);
-        errif(err == -1, op_str.c_str());
+        for (int i = 0; i < res; ++i)
+        {
+            if (events_[i].data.ptr == nullptr)
+                continue;
+            Channel *channel = static_cast<Channel *>(events_[i].data.ptr);
+            channel->revents_ = events_->events;
+            active_list.push_back(channel);
+        }
     }
 
 public:
-    Epoll() : epoll_fd_(epoll_create1(0))
+    Epoll() : epoll_fd_(epoll_create1(0)), events_(nullptr)
     {
-        bzero(&ev, sizeof(ev));
-        errif(epoll_fd_ == -1, "epoll create error");
+        assert(epoll_fd_ != -1);
     }
 
-    void del_channel(const Channel::ChannelPtr &ch) // 只能使用引用或者指针，因为调用del_channel隐式使用了拷贝构造函数，ChannelPtr为unique_ptr无法被拷贝
+    /// @brief operarte epoll interface
+    /// @param ch  channel
+    /// @param op  operarte
+    void ChangeEpoll(const ChannelPtr &channel, int op)
     {
-        operate_epoll(ch, EPOLL_CTL_DEL,"EPOLL_CTL_DEL");
+        epoll_event ev;
+        if (op != EPOLL_CTL_DEL)
+        {
+            ev.data.ptr = channel.get();
+            ev.events = channel->events_;
+        }
+
+        if (epoll_ctl(epoll_fd_, op, channel->fd_, &ev) < 0)
+        {
+            throw std::runtime_error(strerror(errno));
+        }
     }
 
-    void add_channel(const Channel::ChannelPtr &ch)
+    /// @brief epoll_wait wrapper
+    /// @param list channel active list
+    void Poll(std::vector<Channel *> &active_list, const int channel_list_size)
     {
-        operate_epoll(ch, EPOLL_CTL_ADD,"EPOLL_CTL_ADD");
-    }
-
-    void mod_channel(const Channel::ChannelPtr &ch)
-    {
-        operate_epoll(ch, EPOLL_CTL_MOD,"EPOLL_CTL_MOD");
-    }
-
-    void poll(std::vector<Channel *> &list)
-    {
+        events_ = new epoll_event[channel_list_size * 2];
     again:
-        // coming_ev.fill(epoll_event());
-        int err = epoll_wait(epoll_fd_, coming_ev, MAX_COUNT, -1);
-
-        if (errno == EAGAIN || errno == EINTR)
+        int res = epoll_wait(epoll_fd_, events_, channel_list_size, -1);
+        if (errno == EINTR && res == -1)
         {
             goto again;
         }
-        else
+        else if (errno != EINTR && res == -1)
         {
-            errif(err == -1, "epoll wait error");
+            throw std::runtime_error("epoll wait");
         }
-
-        for (int i = 0; i < err; ++i)
-        {
-            if (coming_ev[i].data.ptr == nullptr)
-                continue;
-            auto ch_ptr = static_cast<Channel *>(coming_ev[i].data.ptr);
-            ch_ptr->set_happend_event(coming_ev[i].events);
-            list.push_back(ch_ptr);
-        }
+        FillActionList(active_list, res);
+        delete events_;
+        events_ = nullptr;
     }
 
     ~Epoll()
     {
         close(epoll_fd_);
+        if (events_ != nullptr)
+        {
+            delete events_;
+        }
     }
 };
