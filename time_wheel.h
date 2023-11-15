@@ -1,4 +1,3 @@
-#include <sys/types.h> /* See NOTES */
 #pragma once
 
 #include <time.h>
@@ -44,17 +43,7 @@ public:
     void add_task_agagin(const task &element)
     {
         size_t future_time = cur_sec + std::get<0>(element);
-        if (future_time + cur_sec <= 60)
-        {
-            auto time = std::get<0>(element);
-            auto fun = std::get<1>(element);
-            auto temp = std::make_tuple(time, fun);
-            fun_timer[time % 60].push_back(temp);
-        }
-        else 
-        {
-
-        }
+        fun_timer[future_time % 60].push_back(element);
     }
 
     /// @brief 每过一秒tick一次 移动一次时间轮下标
@@ -63,14 +52,14 @@ public:
         while (!quit)
         {
             sleep(1);
-            ++cur_sec;
+            cur_sec = ++cur_sec % 60;
             for (auto &task_element : fun_timer[cur_sec])
             {
                 std::get<1>(task_element)();
                 add_task_agagin(task_element);
+                std::cout << cur_sec << std::endl;
             }
             fun_timer[cur_sec].clear();
-            cur_sec = cur_sec % 60;
         }
     }
 
@@ -81,15 +70,3 @@ public:
 
     ~Alarm() = default;
 };
-
-int main()
-{
-    Alarm a;
-    auto task = []()
-    { std::cout << "hello world" << std::endl; };
-
-    a.add_task(2, task);
-    a.start();
-
-    return 0;
-}
