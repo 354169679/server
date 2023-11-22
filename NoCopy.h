@@ -1,6 +1,6 @@
 #pragma once
 
-class NoCopy
+class NoCopyAble
 {
 protected:
     NoCopy(const NoCopy &) = delete;
