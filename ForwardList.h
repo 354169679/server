@@ -1,3 +1,5 @@
+#pragma once
+
 #include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -14,28 +16,45 @@ struct ForwardList
     struct Node *head_node;
 };
 
-#define init_list(list)                                             \
-    (list)->head_node = (struct Node *)malloc(sizeof(struct Node)); \
-    (list)->head_node->next_ = NULL
+#define alloc_node (struct Node *)malloc(sizeof(struct Node))
 
-void insert_element(struct ForwardList *list, const int val)
-{
-    struct Node *new_node = (struct Node *)malloc(sizeof(struct Node));
-    assert(new_node);
-    new_node->data_ = val;
-    new_node->next_ = list->head_node->next_;
-    list->head_node->next_ = new_node;
-}
+#define init_list(list)                  \
+    do                                   \
+    {                                    \
+        (list)->head_node = alloc_node;  \
+        (list)->head_node->next_ = NULL; \
+    } while (0);
 
-void for_each_list(struct ForwardList *list)
-{
-    struct Node *temp = list->head_node->next_;
-    while (temp)
-    {
-        printf("%d\t", temp->data_);
-        temp = temp->next_;
-    }
-}
+#define insert_front_list(list, val)                    \
+    do                                              \
+    {                                               \
+        struct Node *new_node = alloc_node;         \
+        assert(new_node);                           \
+        new_node->data_ = val;                      \
+        new_node->next_ = (list)->head_node->next_; \
+        (list)->head_node->next_ = new_node;        \
+    } while (0);
+
+#define for_each_list(list)                           \
+    do                                                \
+    {                                                 \
+        struct Node *temp = (list)->head_node->next_; \
+        while (temp)                                  \
+        {                                             \
+            printf("%d\t", temp->data_);              \
+            temp = temp->next_;                       \
+        }                                             \
+    } while (0);
+
+#define clear_list(list) \
+    do                                                \
+    {                                                 \
+        struct Node *temp = (list)->head_node->next_; \
+        while (temp)                                  \
+        {                                             \
+            temp->head_node->next_=
+        }                                             \
+    } while (0);
 
 #define forward_list_is_empty(list) \
     ((list)->head_node->next_ ? 0 : 1)
