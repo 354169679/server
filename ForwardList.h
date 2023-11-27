@@ -14,11 +14,9 @@ struct ForwardList
     struct Node *head_node;
 };
 
-void init_list(struct ForwardList *list)
-{
-    list->head_node = (struct Node *)malloc(sizeof(struct Node));
-    list->head_node->next_ = NULL;
-}
+#define init_list(list)                                             \
+    (list)->head_node = (struct Node *)malloc(sizeof(struct Node)); \
+    (list)->head_node->next_ = NULL
 
 void insert_element(struct ForwardList *list, const int val)
 {
