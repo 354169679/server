@@ -1,60 +1,84 @@
 #pragma once
 
-#include <assert.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <exception>
+#include <iostream>
 
-struct Node
+namespace x
 {
-    int data_;
-    struct Node *next_;
-};
+    template <typename T>
+    struct Node
+    {
+        T data_;
+        Node *next_;
+    };
 
-struct ForwardList
-{
-    struct Node *head_node;
-};
+    template <typename T>
+    class ForwardList
+    {
+    private:
+        Node<T> *head_node_ = nullptr;
 
-#define alloc_node (struct Node *)malloc(sizeof(struct Node))
+    public:
+        ForwardList() = default;
+        ForwardList(const ForwardList &);
+        void insert_front(const T &);
+        inline void clear();
+        inline bool empty();
+    };
 
-#define init_list(list)                  \
-    do                                   \
-    {                                    \
-        (list)->head_node = alloc_node;  \
-        (list)->head_node->next_ = NULL; \
-    } while (0);
+    /* fix bug */
+    template <typename T>
+    ForwardList<T>::ForwardList(const ForwardList &list)
+    {
+        try
+        {
+            Node<T> *temp = list.head_node_;
+            while (temp)
+            {
+                Node<T> *node = new Node<T>;
+                node->data_ = temp->data_;
+                node->next_ = temp;
+                head_node_ = node;
+                temp = temp->next_;
+            }
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+    }
 
-#define insert_front_list(list, val)                    \
-    do                                              \
-    {                                               \
-        struct Node *new_node = alloc_node;         \
-        assert(new_node);                           \
-        new_node->data_ = val;                      \
-        new_node->next_ = (list)->head_node->next_; \
-        (list)->head_node->next_ = new_node;        \
-    } while (0);
+    template <typename T>
+    void ForwardList<T>::insert_front(const T &val)
+    {
+        try
+        {
+            Node<T> *node = new Node<T>;
+            node->data_ = val;
+            node->next_ = head_node_;
+            head_node_ = node;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+    }
 
-#define for_each_list(list)                           \
-    do                                                \
-    {                                                 \
-        struct Node *temp = (list)->head_node->next_; \
-        while (temp)                                  \
-        {                                             \
-            printf("%d\t", temp->data_);              \
-            temp = temp->next_;                       \
-        }                                             \
-    } while (0);
+    template <typename T>
+    void ForwardList<T>::clear()
+    {
+        while (head_node_)
+        {
+            Node<T> *temp = head_node_->next_;
+            delete head_node_;
+            head_node_ = temp;
+        }
+        head_node_ = nullptr;
+    }
 
-#define clear_list(list) \
-    do                                                \
-    {                                                 \
-        struct Node *temp = (list)->head_node->next_; \
-        while (temp)                                  \
-        {                                             \
-            temp->head_node->next_=
-        }                                             \
-    } while (0);
-
-#define forward_list_is_empty(list) \
-    ((list)->head_node->next_ ? 0 : 1)
+    template <typename T>
+    bool ForwardList<T>::empty()
+    {
+        return head_node_ == nullptr ? true : false;
+    }
+}
