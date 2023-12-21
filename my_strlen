@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-size_t mystrlen(const char *s)
+size_t my_strlen(const char *s)
 {
     size_t len = 0;
     if (s == NULL)
@@ -17,6 +17,6 @@ size_t mystrlen(const char *s)
 int main(int argc, char *argv[])
 {
     const char *str = "hello";
-    printf("%lu", mystrlen(str));
+    printf("%lu", my_strlen(str));
     return 0;
 }
