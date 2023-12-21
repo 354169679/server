@@ -1,0 +1,22 @@
+#include <stdio.h>
+
+size_t mystrlen(const char *s)
+{
+    size_t len = 0;
+    if (s == NULL)
+        return len;
+
+    while ((*s++) != '\0')
+    {
+        len++;
+    }
+    return len;
+}
+
+
+int main(int argc, char *argv[])
+{
+    const char *str = "hello";
+    printf("%lu", mystrlen(str));
+    return 0;
+}
