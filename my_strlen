@@ -25,6 +25,21 @@ void mycat(char *des, const char *src)
 }
 
 
+int strend(const char *s, const char *t)
+{
+    while (*s && *t)
+    {
+        if (*s == *t)
+        {
+            t++;
+        }
+        s++;
+    }
+    return *t ? 1 : 0;
+}
+
+
+
 int main(int argc, char *argv[])
 {
     const char *str = "hello";
