@@ -13,6 +13,17 @@ size_t my_strlen(const char *s)
     return len;
 }
 
+void mycat(char *des, const char *src)
+{
+    while (*des++)
+        ;
+    des--;
+    while (*des++ = *src++)
+    {
+        ;
+    }
+}
+
 
 int main(int argc, char *argv[])
 {
