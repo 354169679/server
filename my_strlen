@@ -38,6 +38,17 @@ int strend(const char *s, const char *t)
     return *t ? 1 : 0;
 }
 
+char *my_strncpy(char *des, const char *src, size_t n)
+{
+    while (n--)
+    {
+        if (*des++ = *src)
+        {
+            src++;
+        }
+    }
+    return des;
+}
 
 
 int main(int argc, char *argv[])
