@@ -1,5 +1,5 @@
-#ifndef SL_LIST_H
-#define SL_LIST_H
+#ifndef SINGLY_LIST_H
+#define SINGLY_LIST_H
 
 #include <stddef.h>
 
