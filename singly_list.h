@@ -21,6 +21,27 @@ static inline void sl_list_add(struct sl_list *list, struct sl_list *item)
     list->next = item;
 }
 
+static inline void sl_list_del(struct sl_list *list, struct sl_list *item)
+{
+    list->next = item->next;
+    item->next = NULL;
+}
+
+static inline int sl_list_empty(struct sl_list *list)
+{
+    return list->next == list;
+}
+
+static inline int sl_list_len(struct sl_list *list)
+{
+    int len = 0;
+    for (struct sl_list *temp = list->next; temp != list; temp = temp->next)
+    {
+        len++;
+    }
+    return len;
+}
+
 #define sl_list_entry(item, type, member) \
     (type *)((char *)(item)-offsetof(type, member))
 
