@@ -32,6 +32,12 @@ static inline int sl_list_empty(struct sl_list *list)
     return list->next == list;
 }
 
+static inline int sl_list_replace(struct sl_list *new, struct sl_list *prev, struct sl_list *next)
+{
+    new->next = next;
+    prev->next = new;
+}
+
 static inline int sl_list_len(struct sl_list *list)
 {
     int len = 0;
